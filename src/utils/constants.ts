@@ -54,3 +54,11 @@ export const SUPPORTED_LANGUAGES = LANGUAGE_ORDER;
 
 // 通知持续时间
 export const NOTIFICATION_DURATION_MS = 3000;
+
+// Fork 标识
+export const FORK_INFO = {
+  name: 'Kasumi Fork',
+  version: '1.0.0',
+  upstream: 'router-for-me/Cli-Proxy-API-Management-Center',
+  repository: 'https://github.com/ShinozakiKasumi/Cli-Proxy-API-Management-Center'
+};

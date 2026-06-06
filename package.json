@@ -1,7 +1,7 @@
 {
-  "name": "cli-proxy-webui-react",
+  "name": "cli-proxy-webui-react-kasumi-fork",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0-kasumi-fork",
   "type": "module",
   "packageManager": "bun@1.3.14",
   "scripts": {

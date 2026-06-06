@@ -7,16 +7,18 @@ import fs from 'fs';
 
 // Get version from environment, git tag, or package.json
 function getVersion(): string {
+  const forkPrefix = 'kasumi-fork';
+  
   // 1. Environment variable (set by GitHub Actions)
   if (process.env.VERSION) {
-    return process.env.VERSION;
+    return `${forkPrefix}-${process.env.VERSION}`;
   }
 
   // 2. Try git tag
   try {
     const gitTag = execSync('git describe --tags --exact-match 2>/dev/null || git describe --tags 2>/dev/null || echo ""', { encoding: 'utf8' }).trim();
     if (gitTag) {
-      return gitTag;
+      return `${forkPrefix}-${gitTag}`;
     }
   } catch {
     // Git not available or no tags
@@ -26,13 +28,13 @@ function getVersion(): string {
   try {
     const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
     if (pkg.version && pkg.version !== '0.0.0') {
-      return pkg.version;
+      return `${forkPrefix}-v${pkg.version}`;
     }
   } catch {
     // package.json not readable
   }
 
-  return 'dev';
+  return `${forkPrefix}-dev`;
 }
 
 // https://vitejs.dev/config/
