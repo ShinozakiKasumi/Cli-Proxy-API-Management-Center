@@ -98,6 +98,9 @@ function buildInitialForm(
             alias: m.alias ?? '',
             priority: m.priority,
             testModel: m.testModel,
+            temperature: m.temperature,
+            topP: m.topP,
+            forceThinking: m.forceThinking,
           }))
         : [emptyModel()],
       headers: cfg.headers
@@ -137,6 +140,9 @@ function buildInitialForm(
           alias: m.alias ?? '',
           priority: m.priority,
           testModel: m.testModel,
+          temperature: m.temperature,
+          topP: m.topP,
+          forceThinking: m.forceThinking,
         }))
       : [emptyModel()],
     headers: cfg.headers
@@ -943,6 +949,55 @@ export function BaseProviderForm({
                 >
                   <IconX size={12} />
                 </button>
+                {/* Advanced model parameters */}
+                <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 4 }}>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="2"
+                    placeholder="temperature"
+                    value={entry.temperature ?? ''}
+                    onChange={(e) =>
+                      updateField(
+                        'models',
+                        modelsList.map((it, i) => (i === idx ? { ...it, temperature: e.target.value === '' ? undefined : parseFloat(e.target.value) } : it))
+                      )
+                    }
+                    disabled={mutating}
+                  />
+                  <input
+                    className={styles.input}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="1"
+                    placeholder="top_p"
+                    value={entry.topP ?? ''}
+                    onChange={(e) =>
+                      updateField(
+                        'models',
+                        modelsList.map((it, i) => (i === idx ? { ...it, topP: e.target.value === '' ? undefined : parseFloat(e.target.value) } : it))
+                      )
+                    }
+                    disabled={mutating}
+                  />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={entry.forceThinking === true}
+                      onChange={(e) =>
+                        updateField(
+                          'models',
+                          modelsList.map((it, i) => (i === idx ? { ...it, forceThinking: e.target.checked } : it))
+                        )
+                      }
+                      disabled={mutating}
+                    />
+                    <span>Force Thinking</span>
+                  </label>
+                </div>
               </div>
             ))}
             <button

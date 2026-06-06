@@ -86,6 +86,9 @@ export interface ModelEntryInput {
   alias?: string;
   priority?: number;
   testModel?: string;
+  temperature?: number;
+  topP?: number;
+  forceThinking?: boolean;
 }
 
 export interface ApiKeyEntryInput {

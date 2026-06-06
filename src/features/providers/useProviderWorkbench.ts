@@ -102,6 +102,9 @@ const buildProviderKeyConfig = (
       alias: m.alias?.trim() || undefined,
       priority: m.priority,
       testModel: m.testModel,
+      temperature: m.temperature,
+      top_p: m.topP,
+      forceThinking: m.forceThinking,
     }))
     .filter((m) => m.name);
   const excluded = buildExcludedModels(input.excludedModelsText, input.disabled, brand);
@@ -141,6 +144,9 @@ const buildOpenAIConfig = (
       alias: m.alias?.trim() || undefined,
       priority: m.priority,
       testModel: m.testModel,
+      temperature: m.temperature,
+      top_p: m.topP,
+      forceThinking: m.forceThinking,
     }))
     .filter((m) => m.name);
   const apiKeyEntries =
