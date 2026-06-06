@@ -257,6 +257,15 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
           if (model.testModel) {
             payload['test-model'] = model.testModel;
           }
+          if (model.temperature !== undefined) {
+            payload.temperature = model.temperature;
+          }
+          if (model.topP !== undefined) {
+            payload.top_p = model.topP;
+          }
+          if (model.forceThinking !== undefined) {
+            payload['force-thinking'] = model.forceThinking;
+          }
           return payload;
         })
         .filter(Boolean)
