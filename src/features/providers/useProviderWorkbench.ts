@@ -103,7 +103,7 @@ const buildProviderKeyConfig = (
       priority: m.priority,
       testModel: m.testModel,
       temperature: m.temperature,
-      top_p: m.topP,
+      topP: m.topP,
       forceThinking: m.forceThinking,
     }))
     .filter((m) => m.name);
@@ -145,7 +145,7 @@ const buildOpenAIConfig = (
       priority: m.priority,
       testModel: m.testModel,
       temperature: m.temperature,
-      top_p: m.topP,
+      topP: m.topP,
       forceThinking: m.forceThinking,
     }))
     .filter((m) => m.name);
