@@ -101,6 +101,8 @@ function buildInitialForm(
             temperature: m.temperature,
             topP: m.topP,
             forceThinking: m.forceThinking,
+            thinkingBudget: m.thinkingBudget,
+            thinkingLevel: m.thinkingLevel,
           }))
         : [emptyModel()],
       headers: cfg.headers
@@ -143,6 +145,8 @@ function buildInitialForm(
           temperature: m.temperature,
           topP: m.topP,
           forceThinking: m.forceThinking,
+          thinkingBudget: m.thinkingBudget,
+          thinkingLevel: m.thinkingLevel,
         }))
       : [emptyModel()],
     headers: cfg.headers
@@ -997,6 +1001,36 @@ export function BaseProviderForm({
                     />
                     <span>Force Thinking</span>
                   </label>
+                  {entry.forceThinking ? (
+                    <>
+                      <input
+                        className={styles.input}
+                        type="number"
+                        placeholder="thinking budget"
+                        value={entry.thinkingBudget ?? ''}
+                        onChange={(e) =>
+                          updateField(
+                            'models',
+                            modelsList.map((it, i) => (i === idx ? { ...it, thinkingBudget: e.target.value === '' ? undefined : parseInt(e.target.value, 10) } : it))
+                          )
+                        }
+                        disabled={mutating}
+                      />
+                      <input
+                        className={styles.input}
+                        type="text"
+                        placeholder="thinking level"
+                        value={entry.thinkingLevel ?? ''}
+                        onChange={(e) =>
+                          updateField(
+                            'models',
+                            modelsList.map((it, i) => (i === idx ? { ...it, thinkingLevel: e.target.value === '' ? undefined : e.target.value } : it))
+                          )
+                        }
+                        disabled={mutating}
+                      />
+                    </>
+                  ) : null}
                 </div>
               </div>
             ))}

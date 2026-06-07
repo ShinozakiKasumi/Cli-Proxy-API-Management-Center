@@ -37,6 +37,8 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       const temperature = item.temperature;
       const topP = item.top_p;
       const forceThinking = item['force-thinking'];
+      const thinkingBudget = item['thinking-budget'];
+      const thinkingLevel = item['thinking-level'];
       const entry: ModelAlias = { name: String(name) };
       if (alias && alias !== name) {
         entry.alias = String(alias);
@@ -64,6 +66,15 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       }
       if (forceThinking !== undefined) {
         entry.forceThinking = Boolean(forceThinking);
+      }
+      if (thinkingBudget !== undefined) {
+        const parsed = Number(thinkingBudget);
+        if (Number.isFinite(parsed)) {
+          entry.thinkingBudget = parsed;
+        }
+      }
+      if (thinkingLevel !== undefined) {
+        entry.thinkingLevel = String(thinkingLevel);
       }
       return entry;
     })

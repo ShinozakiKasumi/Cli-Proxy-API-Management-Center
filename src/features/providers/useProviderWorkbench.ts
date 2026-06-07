@@ -105,6 +105,8 @@ const buildProviderKeyConfig = (
       temperature: m.temperature,
       topP: m.topP,
       forceThinking: m.forceThinking,
+      thinkingBudget: m.thinkingBudget,
+      thinkingLevel: m.thinkingLevel,
     }))
     .filter((m) => m.name);
   const excluded = buildExcludedModels(input.excludedModelsText, input.disabled, brand);
@@ -147,6 +149,8 @@ const buildOpenAIConfig = (
       temperature: m.temperature,
       topP: m.topP,
       forceThinking: m.forceThinking,
+      thinkingBudget: m.thinkingBudget,
+      thinkingLevel: m.thinkingLevel,
     }))
     .filter((m) => m.name);
   const apiKeyEntries =

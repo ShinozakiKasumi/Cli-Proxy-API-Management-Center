@@ -11,6 +11,8 @@ export interface ModelAlias {
   temperature?: number;
   topP?: number;
   forceThinking?: boolean;
+  thinkingBudget?: number;
+  thinkingLevel?: string;
 }
 
 export interface ApiKeyEntry {

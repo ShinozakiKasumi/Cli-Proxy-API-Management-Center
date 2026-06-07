@@ -266,6 +266,12 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
           if (model.forceThinking !== undefined) {
             payload['force-thinking'] = model.forceThinking;
           }
+          if (model.thinkingBudget !== undefined) {
+            payload['thinking-budget'] = model.thinkingBudget;
+          }
+          if (model.thinkingLevel !== undefined) {
+            payload['thinking-level'] = model.thinkingLevel;
+          }
           return payload;
         })
         .filter(Boolean)
