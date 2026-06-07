@@ -103,6 +103,8 @@ function buildInitialForm(
             forceThinking: m.forceThinking,
             thinkingBudget: m.thinkingBudget,
             thinkingLevel: m.thinkingLevel,
+            antiDegenerationEnabled: m.antiDegenerationEnabled,
+            antiDegenerationMaxRetries: m.antiDegenerationMaxRetries,
           }))
         : [emptyModel()],
       headers: cfg.headers
@@ -147,6 +149,8 @@ function buildInitialForm(
           forceThinking: m.forceThinking,
           thinkingBudget: m.thinkingBudget,
           thinkingLevel: m.thinkingLevel,
+          antiDegenerationEnabled: m.antiDegenerationEnabled,
+          antiDegenerationMaxRetries: m.antiDegenerationMaxRetries,
         }))
       : [emptyModel()],
     headers: cfg.headers
@@ -1030,6 +1034,37 @@ export function BaseProviderForm({
                         disabled={mutating}
                       />
                     </>
+                  ) : null}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, gridColumn: '1 / -1' }}>
+                    <input
+                      type="checkbox"
+                      checked={entry.antiDegenerationEnabled === true}
+                      onChange={(e) =>
+                        updateField(
+                          'models',
+                          modelsList.map((it, i) => (i === idx ? { ...it, antiDegenerationEnabled: e.target.checked } : it))
+                        )
+                      }
+                      disabled={mutating}
+                    />
+                    <span>启用防退化自动重试</span>
+                  </label>
+                  {entry.antiDegenerationEnabled ? (
+                    <input
+                      className={styles.input}
+                      type="number"
+                      min="1"
+                      max="5"
+                      placeholder="最大重试次数"
+                      value={entry.antiDegenerationMaxRetries ?? ''}
+                      onChange={(e) =>
+                        updateField(
+                          'models',
+                          modelsList.map((it, i) => (i === idx ? { ...it, antiDegenerationMaxRetries: e.target.value === '' ? undefined : Math.min(5, Math.max(1, parseInt(e.target.value, 10))) } : it))
+                        )
+                      }
+                      disabled={mutating}
+                    />
                   ) : null}
                 </div>
               </div>

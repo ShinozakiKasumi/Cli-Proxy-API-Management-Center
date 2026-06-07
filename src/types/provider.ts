@@ -13,6 +13,8 @@ export interface ModelAlias {
   forceThinking?: boolean;
   thinkingBudget?: number;
   thinkingLevel?: string;
+  antiDegenerationEnabled?: boolean;
+  antiDegenerationMaxRetries?: number;
 }
 
 export interface ApiKeyEntry {

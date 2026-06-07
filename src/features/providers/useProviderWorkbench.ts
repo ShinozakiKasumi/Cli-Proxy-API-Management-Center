@@ -107,6 +107,8 @@ const buildProviderKeyConfig = (
       forceThinking: m.forceThinking,
       thinkingBudget: m.thinkingBudget,
       thinkingLevel: m.thinkingLevel,
+      antiDegenerationEnabled: m.antiDegenerationEnabled,
+      antiDegenerationMaxRetries: m.antiDegenerationMaxRetries,
     }))
     .filter((m) => m.name);
   const excluded = buildExcludedModels(input.excludedModelsText, input.disabled, brand);
@@ -151,6 +153,8 @@ const buildOpenAIConfig = (
       forceThinking: m.forceThinking,
       thinkingBudget: m.thinkingBudget,
       thinkingLevel: m.thinkingLevel,
+      antiDegenerationEnabled: m.antiDegenerationEnabled,
+      antiDegenerationMaxRetries: m.antiDegenerationMaxRetries,
     }))
     .filter((m) => m.name);
   const apiKeyEntries =
