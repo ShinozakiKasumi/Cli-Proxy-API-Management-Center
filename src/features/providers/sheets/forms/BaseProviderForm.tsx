@@ -108,6 +108,9 @@ function buildInitialForm(
             thinkingLevel: m.thinkingLevel,
             antiDegenerationEnabled: m.antiDegenerationEnabled,
             antiDegenerationMaxRetries: m.antiDegenerationMaxRetries,
+            extraFields: m.extraFields,
+            endpointOverride: m.endpointOverride,
+            targetFormat: m.targetFormat,
           }))
         : [emptyModel()],
       headers: cfg.headers
@@ -154,6 +157,9 @@ function buildInitialForm(
           thinkingLevel: m.thinkingLevel,
           antiDegenerationEnabled: m.antiDegenerationEnabled,
           antiDegenerationMaxRetries: m.antiDegenerationMaxRetries,
+          extraFields: m.extraFields,
+          endpointOverride: m.endpointOverride,
+          targetFormat: m.targetFormat,
         }))
       : [emptyModel()],
     headers: cfg.headers
@@ -1071,6 +1077,53 @@ export function BaseProviderForm({
                       disabled={mutating}
                     />
                   ) : null}
+                  <details style={{ gridColumn: '1 / -1', marginTop: 4 }}>
+                    <summary style={{ fontSize: 12, cursor: 'pointer', userSelect: 'none' }}>高级自定义字段 (JSON)</summary>
+                    <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
+                      <input
+                        className={styles.input}
+                        type="text"
+                        placeholder="目标格式 (默认 openai，可选 anthropic/claude 等)"
+                        value={entry.targetFormat ?? ''}
+                        onChange={(e) =>
+                          updateField(
+                            'models',
+                            modelsList.map((it, i) => (i === idx ? { ...it, targetFormat: e.target.value.trim() || undefined } : it))
+                          )
+                        }
+                        disabled={mutating}
+                      />
+                      <input
+                        className={styles.input}
+                        type="text"
+                        placeholder="接口路径覆盖 (默认 /chat/completions)"
+                        value={entry.endpointOverride ?? ''}
+                        onChange={(e) =>
+                          updateField(
+                            'models',
+                            modelsList.map((it, i) => (i === idx ? { ...it, endpointOverride: e.target.value.trim() || undefined } : it))
+                          )
+                        }
+                        disabled={mutating}
+                      />
+                      <textarea
+                        className={styles.textarea}
+                        rows={3}
+                        placeholder={'{"max_tokens": 1024} — 将会合并到上游请求体'}
+                        value={entry.extraFields ? JSON.stringify(entry.extraFields, null, 2) : ''}
+                        onChange={(e) => {
+                          const raw = e.target.value.trim();
+                          let parsed: Record<string, unknown> | undefined;
+                          try { if (raw) parsed = JSON.parse(raw); } catch {}
+                          updateField(
+                            'models',
+                            modelsList.map((it, i) => (i === idx ? { ...it, extraFields: parsed } : it))
+                          );
+                        }}
+                        disabled={mutating}
+                      />
+                    </div>
+                  </details>
                 </div>
               </div>
             ))}

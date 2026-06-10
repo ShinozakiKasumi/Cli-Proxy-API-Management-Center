@@ -13,6 +13,9 @@ export interface ModelAlias {
   forceThinking?: boolean;
   thinkingBudget?: number;
   thinkingLevel?: string;
+  extraFields?: Record<string, unknown>;
+  endpointOverride?: string;
+  targetFormat?: string;
   antiDegenerationEnabled?: boolean;
   antiDegenerationMaxRetries?: number;
 }

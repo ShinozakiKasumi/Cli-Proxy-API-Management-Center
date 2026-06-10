@@ -76,6 +76,18 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       if (thinkingLevel !== undefined) {
         entry.thinkingLevel = String(thinkingLevel);
       }
+      const extraFields = item["extra-fields"];
+      if (extraFields !== undefined && extraFields !== null && typeof extraFields === "object" && !Array.isArray(extraFields)) {
+        entry.extraFields = extraFields as Record<string, unknown>;
+      }
+      const endpointOverride = item["endpoint-override"];
+      if (endpointOverride !== undefined && endpointOverride !== null) {
+        entry.endpointOverride = String(endpointOverride);
+      }
+      const targetFormat = item["target-format"];
+      if (targetFormat !== undefined && targetFormat !== null) {
+        entry.targetFormat = String(targetFormat);
+      }
       return entry;
     })
     .filter(Boolean) as ModelAlias[];

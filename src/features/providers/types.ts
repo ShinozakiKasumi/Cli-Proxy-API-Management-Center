@@ -99,6 +99,9 @@ export interface ModelEntryInput {
   thinkingLevel?: string;
   antiDegenerationEnabled?: boolean;
   antiDegenerationMaxRetries?: number;
+  extraFields?: Record<string, unknown>;
+  endpointOverride?: string;
+  targetFormat?: string;
 }
 
 export interface ApiKeyEntryInput {

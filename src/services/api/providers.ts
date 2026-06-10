@@ -284,6 +284,15 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
           if (model.thinkingLevel !== undefined) {
             payload['thinking-level'] = model.thinkingLevel;
           }
+          if (model.targetFormat !== undefined && model.targetFormat.trim()) {
+            payload["target-format"] = model.targetFormat.trim();
+          }
+          if (model.endpointOverride !== undefined && model.endpointOverride.trim()) {
+            payload["endpoint-override"] = model.endpointOverride.trim();
+          }
+          if (model.extraFields !== undefined && model.extraFields !== null && typeof model.extraFields === 'object' && !Array.isArray(model.extraFields)) {
+            payload["extra-fields"] = model.extraFields;
+          }
           return payload;
         })
         .filter(Boolean)
