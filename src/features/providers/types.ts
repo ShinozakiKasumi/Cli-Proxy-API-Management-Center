@@ -10,6 +10,12 @@ export type ProviderBrand =
   | 'openaiCompatibility'
   | 'ampcode';
 
+export const PROVIDER_SORT_BY_VALUES = ['name', 'priority', 'recent-success'] as const;
+export type ProviderSortBy = (typeof PROVIDER_SORT_BY_VALUES)[number];
+
+export const SORT_DIR_VALUES = ['asc', 'desc'] as const;
+export type SortDir = (typeof SORT_DIR_VALUES)[number];
+
 export type ProviderResourceSelector =
   | { brand: 'gemini'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'codex'; apiKey: string; baseUrl?: string; index: number }
@@ -128,7 +134,7 @@ export interface ProviderEntryFormInput {
   websockets?: boolean;
   /** Claude 专属 */
   cloak?: CloakInput;
-  /** OpenAI 专属 */
+  /** OpenAI persists this; Gemini/Claude use it for one-off connectivity tests. */
   testModel?: string;
   apiKeyEntries?: ApiKeyEntryInput[];
 }

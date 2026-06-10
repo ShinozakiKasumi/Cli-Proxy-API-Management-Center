@@ -7,12 +7,15 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { lockScroll, unlockScroll } from '@/components/ui/scrollLock';
 import {
   IconChevronDown,
   IconChevronUp,
   IconCode,
   IconDownload,
   IconEyeOff,
+  IconMaximize2,
+  IconMinimize2,
   IconRefreshCw,
   IconSearch,
   IconSlidersHorizontal,
@@ -29,12 +32,7 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { downloadBlob } from '@/utils/download';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
-import {
-  HTTP_METHODS,
-  STATUS_GROUPS,
-  resolveStatusGroup,
-  type LogState,
-} from './hooks/logTypes';
+import { HTTP_METHODS, STATUS_GROUPS, resolveStatusGroup, type LogState } from './hooks/logTypes';
 import { parseLogLine } from './hooks/logParsing';
 import { useLogFilters } from './hooks/useLogFilters';
 import { isNearBottom, useLogScroller } from './hooks/useLogScroller';
@@ -52,6 +50,37 @@ const MAX_BUFFER_LINES = 10000;
 const LONG_PRESS_MS = 650;
 const LONG_PRESS_MOVE_THRESHOLD = 10;
 
+const getIncrementalAfter = (cursor: LogsQuery['after']): LogsQuery['after'] => {
+  if (typeof cursor !== 'number') return cursor;
+  return cursor > 1 ? cursor - 1 : undefined;
+};
+
+const findLineOverlap = (currentLines: string[], incomingLines: string[]): number => {
+  const maxOverlap = Math.min(currentLines.length, incomingLines.length);
+
+  for (let size = maxOverlap; size > 0; size -= 1) {
+    let matched = true;
+    for (let i = 0; i < size; i += 1) {
+      if (currentLines[currentLines.length - size + i] !== incomingLines[i]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return size;
+  }
+
+  return 0;
+};
+
+const mergeIncrementalLines = (currentLines: string[], incomingLines: string[]): string[] => {
+  if (currentLines.length === 0 || incomingLines.length === 0) {
+    return [...currentLines, ...incomingLines];
+  }
+
+  const overlap = findLineOverlap(currentLines, incomingLines);
+  return [...currentLines, ...incomingLines.slice(overlap)];
+};
+
 const getErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message;
   if (typeof err === 'string') return err;
@@ -66,7 +95,7 @@ const getErrorPayloadText = (err: unknown): string => {
   if (typeof err !== 'object' || err === null) return '';
   const payloads = [
     (err as { data?: unknown }).data,
-    (err as { details?: unknown }).details
+    (err as { details?: unknown }).details,
   ].filter((payload) => payload !== undefined);
   return payloads
     .map((payload) => {
@@ -122,6 +151,7 @@ export function LogsPage() {
   const [errorLogsError, setErrorLogsError] = useState('');
   const [requestLogId, setRequestLogId] = useState<string | null>(null);
   const [requestLogDownloading, setRequestLogDownloading] = useState(false);
+  const [fullscreenLogs, setFullscreenLogs] = useState(false);
 
   const logScrollerRef = useRef<ReturnType<typeof useLogScroller> | null>(null);
   const requestLogHomeIpByIdRef = useRef<Record<string, string>>({});
@@ -184,7 +214,7 @@ export function LogsPage() {
 
       const params: LogsQuery =
         incremental && latestCursorRef.current
-          ? { after: latestCursorRef.current, limit: MAX_BUFFER_LINES }
+          ? { after: getIncrementalAfter(latestCursorRef.current), limit: MAX_BUFFER_LINES }
           : { limit: MAX_BUFFER_LINES };
       const data = await logsApi.fetchLogs(params);
       setFileLoggingRequired(false);
@@ -209,7 +239,7 @@ export function LogsPage() {
         // 增量更新：追加新日志并限制缓冲区大小（避免内存与渲染膨胀）
         setLogState((prev) => {
           const prevRenderedCount = prev.buffer.length - prev.visibleFrom;
-          const combined = [...prev.buffer, ...newLines];
+          const combined = mergeIncrementalLines(prev.buffer, newLines);
           const dropCount = Math.max(combined.length - MAX_BUFFER_LINES, 0);
           const buffer = dropCount > 0 ? combined.slice(dropCount) : combined;
           let visibleFrom = Math.max(prev.visibleFrom - dropCount, 0);
@@ -442,14 +472,14 @@ export function LogsPage() {
     return {
       filteredParsedLines: filteredParsed,
       filteredLines: filteredParsed.map((line) => line.raw),
-      removedCount: Math.max(baseLines.length - filteredParsed.length, 0)
+      removedCount: Math.max(baseLines.length - filteredParsed.length, 0),
     };
   }, [
     baseLines,
     filters.methodFilterSet,
     filters.pathFilterSet,
     filters.statusFilterSet,
-    parsedSearchLines
+    parsedSearchLines,
   ]);
 
   const parsedVisibleLines = useMemo(
@@ -466,7 +496,7 @@ export function LogsPage() {
     isSearching,
     filteredLineCount: filteredLines.length,
     hasStructuredFilters: filters.hasStructuredFilters,
-    showRawLogs
+    showRawLogs,
   });
 
   logScrollerRef.current = scroller;
@@ -535,7 +565,7 @@ export function LogsPage() {
       );
       downloadBlob({
         filename: `request-${id}.log`,
-        blob: new Blob([response.data], { type: 'text/plain' })
+        blob: new Blob([response.data], { type: 'text/plain' }),
       });
       showNotification(t('logs.request_log_download_success'), 'success');
       setRequestLogId(null);
@@ -559,13 +589,32 @@ export function LogsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!fullscreenLogs) return;
+
+    document.body.classList.add('logs-fullscreen-active');
+    lockScroll();
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (document.querySelector('.modal-overlay')) return;
+      setFullscreenLogs(false);
+    };
+
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.classList.remove('logs-fullscreen-active');
+      unlockScroll();
+    };
+  }, [fullscreenLogs]);
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
-        <div className={styles.runtimeNotice}>
-          {t(`logs.runtime_${serverRuntimeKind}`)}
-        </div>
+        <div className={styles.runtimeNotice}>{t(`logs.runtime_${serverRuntimeKind}`)}</div>
       </div>
 
       <div className={styles.tabBar}>
@@ -579,7 +628,10 @@ export function LogsPage() {
         <button
           type="button"
           className={`${styles.tabItem} ${activeTab === 'errors' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('errors')}
+          onClick={() => {
+            setFullscreenLogs(false);
+            setActiveTab('errors');
+          }}
         >
           {t('logs.error_logs_modal_title')}
         </button>
@@ -587,7 +639,11 @@ export function LogsPage() {
 
       <div className={styles.content}>
         {activeTab === 'logs' && (
-          <Card className={styles.logCard}>
+          <Card
+            className={[styles.logCard, fullscreenLogs ? styles.logCardFullscreen : '']
+              .filter(Boolean)
+              .join(' ')}
+          >
             {showFileLoggingRequired && (
               <div className="status-badge warning">
                 {t(
@@ -600,63 +656,67 @@ export function LogsPage() {
             {error && <div className="error-box">{error}</div>}
 
             <div className={styles.filters}>
-              <div className={styles.searchWrapper}>
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('logs.search_placeholder')}
-                  className={styles.searchInput}
-                  rightElement={
-                    searchQuery ? (
-                      <button
-                        type="button"
-                        className={styles.searchClear}
-                        onClick={() => setSearchQuery('')}
-                        title="Clear"
-                        aria-label="Clear"
-                      >
-                        <IconX size={16} />
-                      </button>
-                    ) : (
-                      <IconSearch size={16} className={styles.searchIcon} />
-                    )
-                  }
-                />
-              </div>
+              {!fullscreenLogs && (
+                <>
+                  <div className={styles.searchWrapper}>
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={t('logs.search_placeholder')}
+                      className={styles.searchInput}
+                      rightElement={
+                        searchQuery ? (
+                          <button
+                            type="button"
+                            className={styles.searchClear}
+                            onClick={() => setSearchQuery('')}
+                            title="Clear"
+                            aria-label="Clear"
+                          >
+                            <IconX size={16} />
+                          </button>
+                        ) : (
+                          <IconSearch size={16} className={styles.searchIcon} />
+                        )
+                      }
+                    />
+                  </div>
 
-              <div className={styles.filterPanelHeader}>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className={styles.filterPanelToggle}
-                  onClick={() => setStructuredFiltersExpanded((prev) => !prev)}
-                  aria-expanded={structuredFiltersExpanded}
-                  aria-controls={structuredFiltersPanelId}
-                  title={
-                    structuredFiltersExpanded
-                      ? t('logs.filter_panel_collapse')
-                      : t('logs.filter_panel_expand')
-                  }
-                >
-                  <span className={styles.filterPanelButtonContent}>
-                    <IconSlidersHorizontal size={16} />
-                    <span>{t('logs.filter_panel_title')}</span>
-                    {structuredFilterCount > 0 && (
-                      <span className={styles.filterPanelCount}>
-                        {t('logs.filter_panel_active_count', { count: structuredFilterCount })}
+                  <div className={styles.filterPanelHeader}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className={styles.filterPanelToggle}
+                      onClick={() => setStructuredFiltersExpanded((prev) => !prev)}
+                      aria-expanded={structuredFiltersExpanded}
+                      aria-controls={structuredFiltersPanelId}
+                      title={
+                        structuredFiltersExpanded
+                          ? t('logs.filter_panel_collapse')
+                          : t('logs.filter_panel_expand')
+                      }
+                    >
+                      <span className={styles.filterPanelButtonContent}>
+                        <IconSlidersHorizontal size={16} />
+                        <span>{t('logs.filter_panel_title')}</span>
+                        {structuredFilterCount > 0 && (
+                          <span className={styles.filterPanelCount}>
+                            {t('logs.filter_panel_active_count', { count: structuredFilterCount })}
+                          </span>
+                        )}
+                        {structuredFiltersExpanded ? (
+                          <IconChevronUp size={16} />
+                        ) : (
+                          <IconChevronDown size={16} />
+                        )}
                       </span>
-                    )}
-                    {structuredFiltersExpanded ? (
-                      <IconChevronUp size={16} />
-                    ) : (
-                      <IconChevronDown size={16} />
-                    )}
-                  </span>
-                </Button>
-              </div>
+                    </Button>
+                  </div>
+                </>
+              )}
 
-              {structuredFiltersExpanded && (
+              {!fullscreenLogs && structuredFiltersExpanded && (
                 <div id={structuredFiltersPanelId} className={styles.structuredFilters}>
                   <div className={styles.filterChipGroup}>
                     <span className={styles.filterChipLabel}>{t('logs.filter_method')}</span>
@@ -813,6 +873,23 @@ export function LogsPage() {
                     {t('logs.clear_button')}
                   </span>
                 </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setFullscreenLogs((prev) => !prev)}
+                  className={styles.actionButton}
+                  aria-pressed={fullscreenLogs}
+                  title={
+                    fullscreenLogs ? t('logs.exit_fullscreen_button') : t('logs.fullscreen_button')
+                  }
+                >
+                  <span className={styles.buttonContent}>
+                    {fullscreenLogs ? <IconMinimize2 size={16} /> : <IconMaximize2 size={16} />}
+                    {fullscreenLogs
+                      ? t('logs.exit_fullscreen_button')
+                      : t('logs.fullscreen_button')}
+                  </span>
+                </Button>
               </div>
             </div>
 
@@ -821,16 +898,16 @@ export function LogsPage() {
             ) : logState.buffer.length > 0 && filteredLines.length > 0 ? (
               <div
                 ref={scroller.logViewerRef}
-                className={styles.logPanel}
+                className={[styles.logPanel, fullscreenLogs ? styles.logPanelFullscreen : '']
+                  .filter(Boolean)
+                  .join(' ')}
                 onScroll={scroller.handleLogScroll}
               >
                 {scroller.canLoadMore && (
                   <div className={styles.loadMoreBanner}>
                     <span>{t('logs.load_more_hint')}</span>
                     <div className={styles.loadMoreStats}>
-                      <span>
-                        {t('logs.loaded_lines', { count: filteredLines.length })}
-                      </span>
+                      <span>{t('logs.loaded_lines', { count: filteredLines.length })}</span>
                       {removedCount > 0 && (
                         <span className={styles.loadMoreCount}>
                           {t('logs.filtered_lines', { count: removedCount })}
@@ -993,7 +1070,9 @@ export function LogsPage() {
 
               {requestLogEnabled && !isHomeRuntime && (
                 <div>
-                  <div className="status-badge warning">{t('logs.error_logs_request_log_enabled')}</div>
+                  <div className="status-badge warning">
+                    {t('logs.error_logs_request_log_enabled')}
+                  </div>
                 </div>
               )}
 
@@ -1041,7 +1120,11 @@ export function LogsPage() {
         title={t('logs.request_log_download_title')}
         footer={
           <>
-            <Button variant="secondary" onClick={closeRequestLogModal} disabled={requestLogDownloading}>
+            <Button
+              variant="secondary"
+              onClick={closeRequestLogModal}
+              disabled={requestLogDownloading}
+            >
               {t('common.cancel')}
             </Button>
             <Button
