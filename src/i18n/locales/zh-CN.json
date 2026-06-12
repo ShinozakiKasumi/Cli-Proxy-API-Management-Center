@@ -1307,6 +1307,7 @@
       "apiKeyEditPlaceholder": "留空表示不修改",
       "baseUrl": "服务地址",
       "baseUrlRequiredHint": "此提供商要求填写服务地址",
+      "baseUrlOptionalHint": "留空则根据 Account ID 自动生成",
       "proxyUrl": "代理 URL",
       "prefix": "前缀",
       "priority": "优先级",

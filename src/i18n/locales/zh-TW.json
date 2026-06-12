@@ -1333,6 +1333,7 @@
       "apiKeyEditPlaceholder": "留空表示不修改",
       "baseUrl": "服務位址",
       "baseUrlRequiredHint": "此提供商需要填寫服務位址",
+      "baseUrlOptionalHint": "留空則根據 Account ID 自動產生",
       "proxyUrl": "代理 URL",
       "prefix": "前綴",
       "priority": "優先級",

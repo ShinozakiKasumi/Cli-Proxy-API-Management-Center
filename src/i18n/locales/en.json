@@ -1307,6 +1307,7 @@
       "apiKeyEditPlaceholder": "Leave empty to keep unchanged",
       "baseUrl": "Base URL",
       "baseUrlRequiredHint": "Required for this provider",
+      "baseUrlOptionalHint": "Leave empty to auto-derive from Account ID",
       "proxyUrl": "Proxy URL",
       "prefix": "Prefix",
       "priority": "Priority",

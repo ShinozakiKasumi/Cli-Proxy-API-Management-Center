@@ -161,6 +161,11 @@ export function workersAiToResource(
   const firstEntry = config.apiKeyEntries?.[0];
   const previewApiKey = firstEntry?.apiKey ? maskApiKey(firstEntry.apiKey) : null;
   const previewAccountId = firstEntry?.accountId ?? null;
+  const resolvedBaseUrl =
+    config.baseUrl?.trim() ||
+    (previewAccountId
+      ? `https://api.cloudflare.com/client/v4/accounts/${previewAccountId}/ai/v1`
+      : null);
   return {
     id: buildId('workersAi', index, truncateForId(name) || `#${index}`),
     brand: 'workersAi',
@@ -170,7 +175,7 @@ export function workersAiToResource(
     apiKeyPreview: previewAccountId ? `${previewAccountId.slice(0, 8)}…` : previewApiKey,
     apiKey: null,
     authIndex: config.authIndex ?? null,
-    baseUrl: config.baseUrl ?? null,
+    baseUrl: resolvedBaseUrl,
     proxyUrl: null,
     prefix: config.prefix ?? null,
     modelCount: config.models?.length ?? 0,

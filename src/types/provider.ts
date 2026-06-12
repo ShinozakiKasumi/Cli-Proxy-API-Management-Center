@@ -76,7 +76,7 @@ export interface OpenAIProviderConfig {
 export interface WorkersAiProviderConfig {
   name: string;
   prefix?: string;
-  baseUrl: string;
+  baseUrl?: string;
   apiKeyEntries: ApiKeyEntry[];
   disabled?: boolean;
   headers?: Record<string, string>;

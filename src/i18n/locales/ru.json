@@ -1302,6 +1302,7 @@
       "apiKeyEditPlaceholder": "Оставьте пустым, чтобы не менять",
       "baseUrl": "Base URL",
       "baseUrlRequiredHint": "Обязательно для этого провайдера",
+      "baseUrlOptionalHint": "Оставьте пустым для автоматической генерации из Account ID",
       "proxyUrl": "Proxy URL",
       "prefix": "Префикс",
       "priority": "Приоритет",

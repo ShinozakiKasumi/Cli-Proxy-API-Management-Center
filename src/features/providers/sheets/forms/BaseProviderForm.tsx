@@ -583,6 +583,11 @@ export function BaseProviderForm({
                   {' '}
                   · {t('providersPage.form.baseUrlRequiredHint')}
                 </span>
+              ) : brand === 'workersAi' ? (
+                <span className={styles.labelHint}>
+                  {' '}
+                  · {t('providersPage.form.baseUrlOptionalHint')}
+                </span>
               ) : null}
             </label>
             <input
@@ -590,7 +595,11 @@ export function BaseProviderForm({
               className={styles.input}
               value={form.baseUrl}
               onChange={(e) => updateField('baseUrl', e.target.value)}
-              placeholder="https://api.example.com"
+              placeholder={
+                brand === 'workersAi'
+                  ? 'https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1'
+                  : 'https://api.example.com'
+              }
               disabled={mutating}
             />
           </div>

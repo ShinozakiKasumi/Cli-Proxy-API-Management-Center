@@ -226,7 +226,7 @@ const buildWorkersAiConfig = (
   return {
     ...(existing ?? {}),
     name: input.name.trim(),
-    baseUrl: input.baseUrl.trim(),
+    baseUrl: input.baseUrl.trim() || undefined,
     prefix: input.prefix.trim() || undefined,
     apiKeyEntries,
     disabled: input.disabled,

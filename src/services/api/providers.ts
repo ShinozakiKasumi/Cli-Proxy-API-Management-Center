@@ -429,11 +429,11 @@ const serializeWorkersAiApiKeyEntry = (entry: ApiKeyEntry) => {
 const serializeWorkersAiProvider = (provider: WorkersAiProviderConfig) => {
   const payload: Record<string, unknown> = {
     name: provider.name,
-    'base-url': provider.baseUrl,
     'api-key-entries': Array.isArray(provider.apiKeyEntries)
       ? provider.apiKeyEntries.map((entry) => serializeWorkersAiApiKeyEntry(entry))
       : [],
   };
+  if (provider.baseUrl?.trim()) payload['base-url'] = provider.baseUrl.trim();
   if (provider.prefix?.trim()) payload.prefix = provider.prefix.trim();
   if (provider.disabled !== undefined) payload.disabled = provider.disabled;
   const headers = serializeHeaders(provider.headers);
@@ -466,8 +466,7 @@ const normalizeWorkersAiProvider = (data: unknown): WorkersAiProviderConfig | nu
   if (!data || typeof data !== 'object') return null;
   const record = data as Record<string, unknown>;
   const name = typeof record.name === 'string' ? record.name.trim() : '';
-  const baseUrl = typeof record['base-url'] === 'string' ? record['base-url'].trim() : '';
-  if (!name || !baseUrl) return null;
+  if (!name) return null;
 
   const apiKeyEntries: ApiKeyEntry[] = [];
   if (Array.isArray(record['api-key-entries'])) {
@@ -484,6 +483,9 @@ const normalizeWorkersAiProvider = (data: unknown): WorkersAiProviderConfig | nu
       });
     }
   }
+
+  const baseUrl = typeof record['base-url'] === 'string' ? record['base-url'].trim() : '';
+  if (!baseUrl && apiKeyEntries.length === 0) return null;
 
   const models: ModelAlias[] = [];
   if (Array.isArray(record.models)) {
@@ -509,7 +511,7 @@ const normalizeWorkersAiProvider = (data: unknown): WorkersAiProviderConfig | nu
 
   return {
     name,
-    baseUrl,
+    baseUrl: baseUrl || undefined,
     prefix: typeof record.prefix === 'string' ? record.prefix.trim() : undefined,
     disabled: record.disabled === true,
     apiKeyEntries: apiKeyEntries.length > 0 ? apiKeyEntries : [],
