@@ -20,6 +20,7 @@ const LOGOS: Record<ProviderBrand, { src: string; invertOnDark?: boolean }> = {
   vertex: { src: vertexLogo },
   openaiCompatibility: { src: openaiLogo, invertOnDark: true },
   ampcode: { src: ampcodeLogo },
+  workersAi: { src: openaiLogo, invertOnDark: true },
 };
 
 export interface ProviderPanelControls {

@@ -13,7 +13,7 @@ import {
 import { Collapsible } from '@/components/ui/Collapsible';
 import { Select } from '@/components/ui/Select';
 import { hasDisableAllModelsRule } from '@/components/providers/utils';
-import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig, WorkersAiProviderConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
 import { PROVIDER_DESCRIPTORS } from '../../descriptors';
 import type {
@@ -51,6 +51,7 @@ const emptyModel = (): ModelEntryInput => ({ name: '', alias: '' });
 const emptyApiKeyEntry = (): ApiKeyEntryInput => ({
   apiKey: '',
   proxyUrl: '',
+  accountId: '',
 });
 
 const stripDisableAllRule = (list?: string[]): string[] =>
@@ -80,7 +81,7 @@ function buildInitialForm(
         brand === 'openaiCompatibility' || brand === 'claude' || brand === 'gemini'
           ? ''
           : undefined,
-      apiKeyEntries: brand === 'openaiCompatibility' ? [emptyApiKeyEntry()] : undefined,
+      apiKeyEntries: brand === 'openaiCompatibility' || brand === 'workersAi' ? [emptyApiKeyEntry()] : undefined,
     };
   }
 
@@ -122,6 +123,51 @@ function buildInitialForm(
         ? cfg.apiKeyEntries.map((entry) => ({
             apiKey: '',
             existingApiKey: entry.apiKey,
+            proxyUrl: entry.proxyUrl ?? '',
+            authIndex: entry.authIndex,
+          }))
+        : [emptyApiKeyEntry()],
+    };
+  }
+
+  if (brand === 'workersAi') {
+    const cfg = raw as WorkersAiProviderConfig;
+    return {
+      apiKey: '',
+      name: cfg.name ?? '',
+      baseUrl: cfg.baseUrl ?? '',
+      proxyUrl: '',
+      prefix: cfg.prefix ?? '',
+      disabled: cfg.disabled === true,
+      priority: cfg.priority,
+      models: cfg.models?.length
+        ? cfg.models.map((m) => ({
+            name: m.name,
+            alias: m.alias ?? '',
+            priority: m.priority,
+            testModel: m.testModel,
+            temperature: m.temperature,
+            topP: m.topP,
+            forceThinking: m.forceThinking,
+            thinkingBudget: m.thinkingBudget,
+            thinkingLevel: m.thinkingLevel,
+            antiDegenerationEnabled: m.antiDegenerationEnabled,
+            antiDegenerationMaxRetries: m.antiDegenerationMaxRetries,
+            extraFields: m.extraFields,
+            endpointOverride: m.endpointOverride,
+            targetFormat: m.targetFormat,
+          }))
+        : [emptyModel()],
+      headers: cfg.headers
+        ? Object.entries(cfg.headers).map(([k, v]) => ({ key: k, value: String(v) }))
+        : [emptyHeader()],
+      excludedModelsText: '',
+      testModel: cfg.testModel ?? '',
+      apiKeyEntries: cfg.apiKeyEntries?.length
+        ? cfg.apiKeyEntries.map((entry) => ({
+            apiKey: '',
+            existingApiKey: entry.apiKey,
+            accountId: entry.accountId ?? '',
             proxyUrl: entry.proxyUrl ?? '',
             authIndex: entry.authIndex,
           }))
@@ -756,8 +802,27 @@ export function BaseProviderForm({
                       </button>
                     </div>
                   </div>
+                  {brand === 'workersAi' ? (
+                    <div className={styles.field}>
+                      <label className={styles.label}>{t('providersPage.form.accountId')}</label>
+                      <input
+                        className={styles.input}
+                        value={entry.accountId ?? ''}
+                        onChange={(e) =>
+                          updateField(
+                            'apiKeyEntries',
+                            apiKeyEntries.map((it, i) =>
+                              i === realIdx ? { ...it, accountId: e.target.value } : it
+                            )
+                          )
+                        }
+                        disabled={mutating}
+                        placeholder={t('providersPage.form.accountIdPlaceholder')}
+                      />
+                    </div>
+                  ) : null}
                   <div className={styles.field}>
-                    <label className={styles.label}>{t('providersPage.form.apiKey')}</label>
+                    <label className={styles.label}>{brand === 'workersAi' ? t('providersPage.form.apiToken') : t('providersPage.form.apiKey')}</label>
                     <div className={styles.passwordField}>
                       <input
                         className={styles.passwordInput}

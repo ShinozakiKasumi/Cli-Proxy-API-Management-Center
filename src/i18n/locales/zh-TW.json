@@ -1274,7 +1274,8 @@
       "claude": "Claude",
       "vertex": "Vertex",
       "openaiCompatibility": "OpenAI 相容",
-      "ampcode": "Amp CLI"
+      "ampcode": "Amp CLI",
+      "workersAi": "Workers AI"
     },
     "table": {
       "key": "金鑰",
@@ -1325,7 +1326,10 @@
       "editEyebrow": "編輯",
       "name": "名稱",
       "apiKey": "API 金鑰",
-      "apiKeyCreatePlaceholder": "輸入 API 金鑰",
+      "apiKeyCreatePlaceholder": "Enter API key",
+      "accountId": "Account ID",
+      "accountIdPlaceholder": "Enter Cloudflare Account ID",
+      "apiToken": "API Token",
       "apiKeyEditPlaceholder": "留空表示不修改",
       "baseUrl": "服務位址",
       "baseUrlRequiredHint": "此提供商需要填寫服務位址",

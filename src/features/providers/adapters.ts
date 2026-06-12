@@ -3,6 +3,7 @@ import type {
   GeminiKeyConfig,
   OpenAIProviderConfig,
   ProviderKeyConfig,
+  WorkersAiProviderConfig,
 } from '@/types';
 import {
   hasDisableAllModelsRule,
@@ -149,5 +150,36 @@ export function ampcodeToResource(config?: AmpcodeConfig | null): ProviderResour
     },
     selector: { brand: 'ampcode' },
     raw: safe,
+  };
+}
+
+export function workersAiToResource(
+  config: WorkersAiProviderConfig,
+  index: number
+): ProviderResource {
+  const name = (config.name ?? '').trim();
+  const firstEntry = config.apiKeyEntries?.[0];
+  const previewApiKey = firstEntry?.apiKey ? maskApiKey(firstEntry.apiKey) : null;
+  const previewAccountId = firstEntry?.accountId ?? null;
+  return {
+    id: buildId('workersAi', index, truncateForId(name) || `#${index}`),
+    brand: 'workersAi',
+    originalIndex: index,
+    name: name || null,
+    identifier: name || `#${index + 1}`,
+    apiKeyPreview: previewAccountId ? `${previewAccountId.slice(0, 8)}…` : previewApiKey,
+    apiKey: null,
+    authIndex: config.authIndex ?? null,
+    baseUrl: config.baseUrl ?? null,
+    proxyUrl: null,
+    prefix: config.prefix ?? null,
+    modelCount: config.models?.length ?? 0,
+    headerCount: countHeaders(config.headers),
+    excludedModelCount: 0,
+    apiKeyEntryCount: config.apiKeyEntries?.length ?? 0,
+    disabled: config.disabled === true,
+    flags: {},
+    selector: { brand: 'workersAi', name, index },
+    raw: config,
   };
 }

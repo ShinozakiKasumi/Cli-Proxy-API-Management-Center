@@ -24,6 +24,7 @@ export interface ApiKeyEntry {
   apiKey: string;
   proxyUrl?: string;
   authIndex?: string;
+  accountId?: string;
 }
 
 export interface CloakConfig {
@@ -59,6 +60,20 @@ export interface ProviderKeyConfig {
 }
 
 export interface OpenAIProviderConfig {
+  name: string;
+  prefix?: string;
+  baseUrl: string;
+  apiKeyEntries: ApiKeyEntry[];
+  disabled?: boolean;
+  headers?: Record<string, string>;
+  models?: ModelAlias[];
+  priority?: number;
+  testModel?: string;
+  authIndex?: string;
+  [key: string]: unknown;
+}
+
+export interface WorkersAiProviderConfig {
   name: string;
   prefix?: string;
   baseUrl: string;

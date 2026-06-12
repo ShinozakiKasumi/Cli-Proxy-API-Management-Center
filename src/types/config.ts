@@ -3,7 +3,7 @@
  * 与基线 /config 返回结构保持一致（内部使用驼峰形式）
  */
 
-import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from './provider';
+import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig, WorkersAiProviderConfig } from './provider';
 import type { AmpcodeConfig } from './ampcode';
 
 export interface QuotaExceededConfig {
@@ -30,6 +30,7 @@ export interface Config {
   claudeApiKeys?: ProviderKeyConfig[];
   vertexApiKeys?: ProviderKeyConfig[];
   openaiCompatibility?: OpenAIProviderConfig[];
+  workersAi?: WorkersAiProviderConfig[];
   oauthExcludedModels?: Record<string, string[]>;
   raw?: Record<string, unknown>;
 }
@@ -52,6 +53,7 @@ export type RawConfigSection =
   | 'claude-api-key'
   | 'vertex-api-key'
   | 'openai-compatibility'
+  | 'workers-ai'
   | 'oauth-excluded-models';
 
 export interface ConfigCache {

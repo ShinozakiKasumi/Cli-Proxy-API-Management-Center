@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ampcodeApi, providersApi } from '@/services/api';
+import { ampcodeApi, providersApi, workersAiApi } from '@/services/api';
 import { useAuthStore, useConfigStore } from '@/stores';
 import {
   withDisableAllModelsRule,
@@ -10,6 +10,7 @@ import type {
   GeminiKeyConfig,
   OpenAIProviderConfig,
   ProviderKeyConfig,
+  WorkersAiProviderConfig,
 } from '@/types';
 import {
   ampcodeToResource,
@@ -18,6 +19,7 @@ import {
   geminiToResource,
   openaiToResource,
   vertexToResource,
+  workersAiToResource,
 } from './adapters';
 import { PROVIDER_BRAND_ORDER, PROVIDER_PATHS } from './descriptors';
 import type {
@@ -29,6 +31,7 @@ import type {
 } from './types';
 
 const getErrorMessage = (err: unknown): string => {
+ 
   if (err instanceof Error) return err.message;
   if (typeof err === 'string') return err;
   return '';
@@ -81,7 +84,7 @@ const buildExcludedModels = (
 ): string[] | undefined => {
   const list = parseTextList(textValue);
   const filtered = list.filter((v) => v !== '*');
-  if (brand === 'openaiCompatibility') {
+  if (brand === 'openaiCompatibility' || brand === 'workersAi') {
     return filtered.length ? filtered : undefined;
   }
   if (disabled) {
@@ -184,6 +187,56 @@ const buildOpenAIConfig = (
   };
 };
 
+const buildWorkersAiConfig = (
+  input: ProviderEntryFormInput,
+  existing?: WorkersAiProviderConfig | null
+): WorkersAiProviderConfig => {
+  const headers = headersFromEntries(input.headers);
+  const models = input.models
+    .map((m) => ({
+      name: m.name.trim(),
+      alias: m.alias?.trim() || undefined,
+      priority: m.priority,
+      testModel: m.testModel,
+      temperature: m.temperature,
+      topP: m.topP,
+      forceThinking: m.forceThinking,
+      thinkingBudget: m.thinkingBudget,
+      thinkingLevel: m.thinkingLevel,
+      antiDegenerationEnabled: m.antiDegenerationEnabled,
+      antiDegenerationMaxRetries: m.antiDegenerationMaxRetries,
+    }))
+    .filter((m) => m.name);
+  const apiKeyEntries =
+    input.apiKeyEntries
+      ?.map((entry, index) => {
+        const fallbackAccountId =
+          entry.accountId?.trim() || existing?.apiKeyEntries?.[index]?.accountId?.trim() || '';
+        const fallbackApiKey =
+          entry.existingApiKey?.trim() || existing?.apiKeyEntries?.[index]?.apiKey?.trim() || '';
+        return {
+          accountId: entry.accountId?.trim() || fallbackAccountId,
+          apiKey: entry.apiKey.trim() || fallbackApiKey,
+          proxyUrl: entry.proxyUrl.trim() || undefined,
+          authIndex: entry.authIndex?.trim() || undefined,
+        };
+      })
+      .filter((entry) => entry.accountId || entry.apiKey) ?? [];
+
+  return {
+    ...(existing ?? {}),
+    name: input.name.trim(),
+    baseUrl: input.baseUrl.trim(),
+    prefix: input.prefix.trim() || undefined,
+    apiKeyEntries,
+    disabled: input.disabled,
+    headers: Object.keys(headers).length ? headers : undefined,
+    models: models.length ? models : undefined,
+    priority: input.priority,
+    testModel: input.testModel?.trim() || undefined,
+  };
+};
+
 /* -------------------------------------------------------------------------- */
 /* hook                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -210,11 +263,12 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     setIsFetching(true);
     setErrorMessage(null);
     try {
-      const [configResult, vertexResult, ampcodeResult, openaiResult] = await Promise.allSettled([
+      const [configResult, vertexResult, ampcodeResult, openaiResult, workersAiResult] = await Promise.allSettled([
         fetchConfig(undefined, true),
         providersApi.getVertexConfigs(),
         ampcodeApi.getAmpcode(),
         providersApi.getOpenAIProviders(),
+        workersAiApi.getWorkersAiProviders(),
       ]);
       if (configResult.status !== 'fulfilled') {
         throw configResult.reason;
@@ -230,6 +284,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       if (openaiResult.status === 'fulfilled') {
         updateConfigValue('openai-compatibility', openaiResult.value || []);
         clearCache('openai-compatibility');
+      }
+      if (workersAiResult.status === 'fulfilled') {
+        updateConfigValue('workers-ai', workersAiResult.value || []);
+        clearCache('workers-ai');
       }
       setFetchedAt(new Date().toISOString());
     } catch (err) {
@@ -272,6 +330,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           break;
         case 'openaiCompatibility':
           resources = (config.openaiCompatibility ?? []).map((c, i) => openaiToResource(c, i));
+          break;
+        case 'workersAi':
+          resources = (config.workersAi ?? []).map((c, i) => workersAiToResource(c, i));
           break;
         case 'ampcode':
           resources = [ampcodeToResource(config.ampcode)];
@@ -338,6 +399,15 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     [clearCache, updateConfigValue]
   );
 
+  const persistWorkersAiConfigs = useCallback(
+    async (next: WorkersAiProviderConfig[]) => {
+      await workersAiApi.saveWorkersAiProviders(next);
+      updateConfigValue('workers-ai', next);
+      clearCache('workers-ai');
+    },
+    [clearCache, updateConfigValue]
+  );
+
   const createProvider = useCallback(
     async (brand: ProviderBrand, input: ProviderEntryFormInput) => {
       setMutating(true);
@@ -362,6 +432,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const next = [...(config?.openaiCompatibility ?? [])];
           next.push(buildOpenAIConfig(input));
           await persistOpenAIConfigs(next);
+        } else if (brand === 'workersAi') {
+          const next = [...(config?.workersAi ?? [])];
+          next.push(buildWorkersAiConfig(input));
+          await persistWorkersAiConfigs(next);
         } else if (brand === 'ampcode') {
           throw new Error('Use saveAmpcode for ampcode create/update');
         }
@@ -377,6 +451,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       persistGeminiKeys,
       persistOpenAIConfigs,
       persistVertexConfigs,
+      persistWorkersAiConfigs,
       refreshSnapshot,
     ]
   );
@@ -412,6 +487,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const existing = list[idx];
           list[idx] = buildOpenAIConfig(input, existing);
           await persistOpenAIConfigs(list);
+        } else if (brand === 'workersAi') {
+          const list = [...(config?.workersAi ?? [])];
+          const existing = list[idx];
+          list[idx] = buildWorkersAiConfig(input, existing);
+          await persistWorkersAiConfigs(list);
         } else if (brand === 'ampcode') {
           throw new Error('Use saveAmpcode for ampcode update');
         }
@@ -427,6 +507,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       persistGeminiKeys,
       persistOpenAIConfigs,
       persistVertexConfigs,
+      persistWorkersAiConfigs,
       refreshSnapshot,
     ]
   );
@@ -461,6 +542,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const next = (config?.openaiCompatibility ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('openai-compatibility', next);
           clearCache('openai-compatibility');
+        } else if (sel.brand === 'workersAi') {
+          await workersAiApi.deleteWorkersAiProvider(sel.index);
+          const next = (config?.workersAi ?? []).filter((_, i) => i !== sel.index);
+          updateConfigValue('workers-ai', next);
+          clearCache('workers-ai');
         } else if (sel.brand === 'ampcode') {
           await Promise.allSettled([
             ampcodeApi.clearUpstreamUrl(),
@@ -518,6 +604,15 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             list[idx] = { ...current, disabled };
             updateConfigValue('openai-compatibility', list);
             clearCache('openai-compatibility');
+          }
+        } else if (brand === 'workersAi') {
+          await workersAiApi.updateWorkersAiProviderDisabled(idx, disabled);
+          const list = [...(config?.workersAi ?? [])];
+          const current = list[idx];
+          if (current) {
+            list[idx] = { ...current, disabled };
+            updateConfigValue('workers-ai', list);
+            clearCache('workers-ai');
           }
         } else if (brand === 'ampcode') {
           /* ampcode toggle 不支持,跳过 */

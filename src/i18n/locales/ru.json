@@ -1243,7 +1243,8 @@
       "claude": "Claude",
       "vertex": "Vertex",
       "openaiCompatibility": "OpenAI-совместимый",
-      "ampcode": "Amp CLI"
+      "ampcode": "Amp CLI",
+      "workersAi": "Workers AI"
     },
     "table": {
       "key": "Ключ",
@@ -1294,7 +1295,10 @@
       "editEyebrow": "Изменить",
       "name": "Название",
       "apiKey": "API-ключ",
-      "apiKeyCreatePlaceholder": "Введите API-ключ",
+      "apiKeyCreatePlaceholder": "Enter API key",
+      "accountId": "Account ID",
+      "accountIdPlaceholder": "Enter Cloudflare Account ID",
+      "apiToken": "API Token",
       "apiKeyEditPlaceholder": "Оставьте пустым, чтобы не менять",
       "baseUrl": "Base URL",
       "baseUrlRequiredHint": "Обязательно для этого провайдера",

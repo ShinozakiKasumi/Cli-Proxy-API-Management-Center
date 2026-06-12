@@ -9,6 +9,7 @@ import {
   normalizeProviderKeyConfig,
 } from './transformers';
 import type {
+  WorkersAiProviderConfig,
   GeminiKeyConfig,
   OpenAIProviderConfig,
   ProviderKeyConfig,
@@ -397,6 +398,127 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
   return payload;
 };
 
+const WORKERS_AI_PROVIDER_FIELDS = [
+  'name',
+  'priority',
+  'disabled',
+  'prefix',
+  'base-url',
+  'api-key-entries',
+  'headers',
+  'models',
+  'test-model',
+] as const;
+
+const WORKERS_AI_API_KEY_ENTRY_FIELDS = ['account-id', 'api-token', 'proxy-url'] as const;
+
+const workersAiProviderIdentity = (record: Record<string, unknown>) =>
+  getStringField(record, ['name']);
+
+const workersAiApiKeyEntryIdentity = (record: Record<string, unknown>) =>
+  getStringField(record, ['account-id']);
+
+const serializeWorkersAiApiKeyEntry = (entry: ApiKeyEntry) => {
+  const payload: Record<string, unknown> = {};
+  if (entry.accountId) payload['account-id'] = entry.accountId;
+  if (entry.apiKey) payload['api-token'] = entry.apiKey;
+  if (entry.proxyUrl) payload['proxy-url'] = entry.proxyUrl;
+  return payload;
+};
+
+const serializeWorkersAiProvider = (provider: WorkersAiProviderConfig) => {
+  const payload: Record<string, unknown> = {
+    name: provider.name,
+    'base-url': provider.baseUrl,
+    'api-key-entries': Array.isArray(provider.apiKeyEntries)
+      ? provider.apiKeyEntries.map((entry) => serializeWorkersAiApiKeyEntry(entry))
+      : [],
+  };
+  if (provider.prefix?.trim()) payload.prefix = provider.prefix.trim();
+  if (provider.disabled !== undefined) payload.disabled = provider.disabled;
+  const headers = serializeHeaders(provider.headers);
+  if (headers) payload.headers = headers;
+  const models = serializeModelAliases(provider.models);
+  if (models && models.length) payload.models = models;
+  if (provider.priority !== undefined) payload.priority = provider.priority;
+  if (provider.testModel) payload['test-model'] = provider.testModel;
+  return payload;
+};
+
+const mergeWorkersAiProviderPayload = (raw: unknown, payload: Record<string, unknown>) => {
+  const next = mergeKnownFields(raw, payload, WORKERS_AI_PROVIDER_FIELDS);
+  const rawApiKeyEntries = isRecord(raw) ? raw['api-key-entries'] : undefined;
+  const apiKeyEntries = payload['api-key-entries'];
+  if (Array.isArray(apiKeyEntries)) {
+    next['api-key-entries'] = mergeKnownRecordList(
+      rawApiKeyEntries,
+      apiKeyEntries.filter(isRecord),
+      WORKERS_AI_API_KEY_ENTRY_FIELDS,
+      workersAiApiKeyEntryIdentity
+    );
+  }
+  const models = mergeModelPayloads(raw, payload.models);
+  if (models) next.models = models;
+  return next;
+};
+
+const normalizeWorkersAiProvider = (data: unknown): WorkersAiProviderConfig | null => {
+  if (!data || typeof data !== 'object') return null;
+  const record = data as Record<string, unknown>;
+  const name = typeof record.name === 'string' ? record.name.trim() : '';
+  const baseUrl = typeof record['base-url'] === 'string' ? record['base-url'].trim() : '';
+  if (!name || !baseUrl) return null;
+
+  const apiKeyEntries: ApiKeyEntry[] = [];
+  if (Array.isArray(record['api-key-entries'])) {
+    for (const entry of record['api-key-entries']) {
+      if (!entry || typeof entry !== 'object') continue;
+      const e = entry as Record<string, unknown>;
+      const accountId = typeof e['account-id'] === 'string' ? e['account-id'].trim() : '';
+      const apiToken = typeof e['api-token'] === 'string' ? e['api-token'].trim() : '';
+      if (!accountId && !apiToken) continue;
+      apiKeyEntries.push({
+        accountId,
+        apiKey: apiToken,
+        proxyUrl: typeof e['proxy-url'] === 'string' ? e['proxy-url'].trim() : undefined,
+      });
+    }
+  }
+
+  const models: ModelAlias[] = [];
+  if (Array.isArray(record.models)) {
+    for (const m of record.models) {
+      if (!m || typeof m !== 'object') continue;
+      const model = m as Record<string, unknown>;
+      const modelName = typeof model.name === 'string' ? model.name.trim() : '';
+      if (!modelName) continue;
+      models.push({
+        name: modelName,
+        alias: typeof model.alias === 'string' ? model.alias.trim() : undefined,
+        priority: typeof model.priority === 'number' ? model.priority : undefined,
+      });
+    }
+  }
+
+  const headers: Record<string, string> = {};
+  if (record.headers && typeof record.headers === 'object') {
+    for (const [k, v] of Object.entries(record.headers)) {
+      if (typeof v === 'string') headers[k] = v;
+    }
+  }
+
+  return {
+    name,
+    baseUrl,
+    prefix: typeof record.prefix === 'string' ? record.prefix.trim() : undefined,
+    disabled: record.disabled === true,
+    apiKeyEntries: apiKeyEntries.length > 0 ? apiKeyEntries : [],
+    models: models.length > 0 ? models : undefined,
+    headers: Object.keys(headers).length > 0 ? headers : undefined,
+    priority: typeof record.priority === 'number' ? record.priority : undefined,
+    testModel: typeof record['test-model'] === 'string' ? record['test-model'].trim() : undefined,
+  };
+};
 export const providersApi = {
   async getGeminiKeys(): Promise<GeminiKeyConfig[]> {
     const data = await apiClient.get('/gemini-api-key');
@@ -528,4 +650,36 @@ export const providersApi = {
 
   deleteOpenAIProvider: (index: number) =>
     apiClient.delete(`/openai-compatibility?index=${encodeURIComponent(String(index))}`),
+};
+
+// Workers AI compatibility API
+export const workersAiApi = {
+  async getWorkersAiProviders(): Promise<WorkersAiProviderConfig[]> {
+    const data = await apiClient.get('/workers-ai-compatibility');
+    const list = extractArrayPayload(data, 'workers-ai-compatibility');
+    return list
+      .map((item) => normalizeWorkersAiProvider(item))
+      .filter(Boolean) as WorkersAiProviderConfig[];
+  },
+
+  saveWorkersAiProviders: async (providers: WorkersAiProviderConfig[]) =>
+    apiClient.put(
+      '/workers-ai-compatibility',
+      await buildPreservedList(
+        'workers-ai-compatibility',
+        providers,
+        serializeWorkersAiProvider,
+        mergeWorkersAiProviderPayload,
+        workersAiProviderIdentity
+      )
+    ),
+
+  updateWorkersAiProvider: (index: number, value: WorkersAiProviderConfig) =>
+    apiClient.patch('/workers-ai-compatibility', { index, value: serializeWorkersAiProvider(value) }),
+
+  updateWorkersAiProviderDisabled: (index: number, disabled: boolean) =>
+    apiClient.patch('/workers-ai-compatibility', { index, value: { disabled } }),
+
+  deleteWorkersAiProvider: (index: number) =>
+    apiClient.delete(`/workers-ai-compatibility?index=${encodeURIComponent(String(index))}`),
 };

@@ -143,6 +143,26 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
     supportsAmpcodeMappings: true,
     sheetSize: 'lg',
   },
+  workersAi: {
+    id: 'workersAi',
+    supportsName: true,
+    supportsApiKey: false,
+    supportsDisabled: true,
+    supportsBaseUrl: true,
+    baseUrlRequired: true,
+    supportsProxyUrl: false,
+    supportsPrefix: true,
+    supportsModels: true,
+    supportsHeaders: true,
+    supportsExcludedModels: false,
+    supportsPriority: true,
+    supportsTestModel: true,
+    supportsWebsockets: false,
+    supportsCloak: false,
+    supportsApiKeyEntries: true,
+    supportsAmpcodeMappings: false,
+    sheetSize: 'lg',
+  },
 };
 
 export const PROVIDER_BRAND_ORDER: ProviderBrand[] = [
@@ -152,6 +172,7 @@ export const PROVIDER_BRAND_ORDER: ProviderBrand[] = [
   'vertex',
   'openaiCompatibility',
   'ampcode',
+  'workersAi',
 ];
 
 export const PROVIDER_PATHS: Record<ProviderBrand, string> = {
@@ -161,4 +182,5 @@ export const PROVIDER_PATHS: Record<ProviderBrand, string> = {
   vertex: '/ai-providers/vertex',
   openaiCompatibility: '/ai-providers/openai',
   ampcode: '/ai-providers/ampcode',
+  workersAi: '/ai-providers/workers-ai',
 };

@@ -16,6 +16,7 @@ const PROVIDER_LOGOS: Record<ProviderBrand, { src: string; invertOnDark?: boolea
   vertex: { src: vertexLogo },
   openaiCompatibility: { src: openaiLogo, invertOnDark: true },
   ampcode: { src: ampcodeLogo },
+  workersAi: { src: openaiLogo, invertOnDark: true },
 };
 
 interface ProviderCategoryListProps {

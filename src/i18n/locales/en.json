@@ -1248,7 +1248,8 @@
       "claude": "Claude",
       "vertex": "Vertex",
       "openaiCompatibility": "OpenAI Compatible",
-      "ampcode": "Amp CLI"
+      "ampcode": "Amp CLI",
+      "workersAi": "Workers AI"
     },
     "table": {
       "key": "Key",
@@ -1300,6 +1301,9 @@
       "name": "Name",
       "apiKey": "API key",
       "apiKeyCreatePlaceholder": "Enter API key",
+      "accountId": "Account ID",
+      "accountIdPlaceholder": "Enter Cloudflare Account ID",
+      "apiToken": "API Token",
       "apiKeyEditPlaceholder": "Leave empty to keep unchanged",
       "baseUrl": "Base URL",
       "baseUrlRequiredHint": "Required for this provider",
